@@ -6,7 +6,7 @@ pub mod websocket;
 
 use crate::transport::Transport;
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct Binance {
     pub transport: Transport,
 }

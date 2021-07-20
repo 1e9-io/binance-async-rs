@@ -43,21 +43,21 @@ pub struct TradeMessage {
     #[serde(rename = "e")]
     pub event_type: String,
     #[serde(rename = "E")]
-    pub event_time: u64,
+    pub event_time: i64,
     #[serde(rename = "s")]
     pub symbol: String,
     #[serde(rename = "t")]
-    pub trade_id: u64,
+    pub trade_id: i64,
     #[serde(rename = "p", with = "string_or_float")]
     pub price: f64,
     #[serde(rename = "q", with = "string_or_float")]
     pub qty: f64,
     #[serde(rename = "b")]
-    pub buyer_order_id: u64,
+    pub buyer_order_id: i64,
     #[serde(rename = "a")]
-    pub seller_order_id: u64,
+    pub seller_order_id: i64,
     #[serde(rename = "T")]
-    pub trade_order_time: u64,
+    pub trade_order_time: i64,
     #[serde(rename = "m")]
     pub is_buyer_maker: bool,
     #[serde(skip_serializing, rename = "M")]
