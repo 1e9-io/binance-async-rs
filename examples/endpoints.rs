@@ -12,6 +12,14 @@ async fn main() -> Fallible<()> {
 
     let bn = Binance::with_credential(&api_key, &secret_key);
 
+    // get aggregated historical trades
+    match bn.get_historical_trades(
+        "BTCUSDT",
+        10, 963563573)?.await {
+        Ok(answer) => println!("{:?}", answer),
+        Err(e) => println!("Error: {}", e),
+    }
+
     // General
     match bn.ping()?.await {
         Ok(answer) => println!("{:?}", answer),
@@ -120,14 +128,6 @@ async fn main() -> Fallible<()> {
 
     // last 10 5min klines (candlesticks) for a symbol:
     match bn.get_klines("BTCUSDT", "5m", 10, None, None)?.await {
-        Ok(answer) => println!("{:?}", answer),
-        Err(e) => println!("Error: {}", e),
-    }
-
-    // get aggregated historical trades
-    match bn.get_historical_trades(
-        "BTCUSDT",
-        10, 963563573)?.await {
         Ok(answer) => println!("{:?}", answer),
         Err(e) => println!("Error: {}", e),
     }

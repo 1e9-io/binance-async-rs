@@ -62,13 +62,13 @@ impl Binance {
             I: Into<Option<u16>>,
             L: Into<Option<u64>>,
     {
-        let limit = limit.into().unwrap_or(100);
-        let from_id = from_id.into().unwrap_or(0);
+        let limit = limit.into().unwrap_or(10);
+        let from_id = from_id.into().unwrap_or(963563573);
         let params = json! {{"symbol": symbol, "limit": limit, "fromId": from_id}};
 
         let trade_history = self
             .transport
-            .signed_get("/api/v3/historicalTrades", Some(params))?;
+            .get("/api/v3/historicalTrades", Some(params))?;
 
         Ok(trade_history)
     }
