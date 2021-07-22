@@ -173,6 +173,20 @@ pub struct TradeHistory {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct AggTradeHistory {
+    pub symbol: String,
+    pub id: u64,
+    pub price: f64,
+    // #[serde(with = "string_or_float")]
+    pub quote_qty: f64,
+    // #[serde(with = "string_or_float")]
+    pub time: u64,
+    pub is_buyer: bool,
+    pub is_best_match: bool
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct PriceStats {
     pub symbol: String,
     #[serde(with = "string_or_float")]
