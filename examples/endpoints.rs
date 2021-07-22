@@ -124,5 +124,13 @@ async fn main() -> Fallible<()> {
         Err(e) => println!("Error: {}", e),
     }
 
+    // get aggregated historical trades
+    match bn.get_historical_trades(
+        "BTCUSDT",
+        10, 963563573)?.await {
+        Ok(answer) => println!("{:?}", answer),
+        Err(e) => println!("Error: {}", e),
+    }
+
     Ok(())
 }
