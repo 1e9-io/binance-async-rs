@@ -1,7 +1,7 @@
 use super::Binance;
 use crate::{
     error::Error,
-    model::{BookTickers, KlineSummaries, KlineSummary, OrderBook, PriceStats, Prices, Ticker, AggTradeHistory},
+    model::{BookTickers, KlineSummaries, KlineSummary, OrderBook, PriceStats, Prices, Ticker, HistoricalTrade},
 };
 use failure::Fallible;
 use futures::prelude::*;
@@ -51,26 +51,24 @@ impl Binance {
         })
     }
 
-    // Historical trades for ONE symbol.
-    pub fn get_historical_trades<I, L>(
+    pub fn get_historical_trades<L, I>(
         &self,
         symbol: &str,
-        limit: I,
-        from_id: L
-    ) -> Fallible<impl Future<Output = Fallible<Vec<AggTradeHistory>>>>
+        limit: L,
+        from_id: I
+    ) -> Fallible<impl Future<Output = Fallible<Vec<HistoricalTrade>>>>
         where
-            I: Into<Option<u16>>,
-            L: Into<Option<u64>>,
+            L: Into<Option<u16>>,
+            I: Into<Option<u64>>,
     {
         let limit = limit.into().unwrap_or(10);
-        let from_id = from_id.into().unwrap_or(963563573);
-        let params = json! {{"symbol": symbol, "limit": limit, "fromId": from_id}};
-
-        let trade_history = self
+        let from_id = from_id.into().unwrap();
+        let params = json! {{"symbol":symbol, "limit": limit, "fromId": from_id}};
+        let historical_trades = self
             .transport
             .get("/api/v3/historicalTrades", Some(params))?;
 
-        Ok(trade_history)
+        Ok(historical_trades)
     }
 
     // Symbols order book ticker
