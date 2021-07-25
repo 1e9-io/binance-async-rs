@@ -183,7 +183,7 @@ pub struct HistoricalTrade {
     pub quote_qty: f64,
     pub time: u64,
     pub is_buyer_maker: bool,
-    pub is_best_match: bool
+    pub is_best_match: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

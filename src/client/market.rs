@@ -1,7 +1,10 @@
 use super::Binance;
 use crate::{
     error::Error,
-    model::{BookTickers, KlineSummaries, KlineSummary, OrderBook, PriceStats, Prices, Ticker, HistoricalTrade},
+    model::{
+        BookTickers, HistoricalTrade, KlineSummaries, KlineSummary, OrderBook, PriceStats, Prices,
+        Ticker,
+    },
 };
 use failure::Fallible;
 use futures::prelude::*;
@@ -55,7 +58,7 @@ impl Binance {
         &self,
         symbol: &str,
         limit: u16,
-        from_id: u64
+        from_id: u64,
     ) -> Fallible<impl Future<Output = Fallible<Vec<HistoricalTrade>>>> {
         let params = json! {{"symbol":symbol, "limit": limit, "fromId": from_id}};
         let historical_trades = self

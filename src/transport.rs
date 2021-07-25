@@ -44,7 +44,7 @@ impl headers::Header for BinanceApiKey {
     }
 }
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct Transport {
     credential: Option<(String, String)>,
     client: reqwest::Client,
