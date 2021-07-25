@@ -51,18 +51,12 @@ impl Binance {
         })
     }
 
-    pub fn get_historical_trades<L, I>(
+    pub fn get_historical_trades(
         &self,
         symbol: &str,
-        limit: L,
-        from_id: I
-    ) -> Fallible<impl Future<Output = Fallible<Vec<HistoricalTrade>>>>
-        where
-            L: Into<Option<u16>>,
-            I: Into<Option<u64>>,
-    {
-        let limit = limit.into().unwrap_or(10);
-        let from_id = from_id.into().unwrap();
+        limit: u16,
+        from_id: u64
+    ) -> Fallible<impl Future<Output = Fallible<Vec<HistoricalTrade>>>> {
         let params = json! {{"symbol":symbol, "limit": limit, "fromId": from_id}};
         let historical_trades = self
             .transport
