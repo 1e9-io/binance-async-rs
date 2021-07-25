@@ -181,7 +181,7 @@ pub struct HistoricalTrade {
     pub qty: f64,
     #[serde(with = "string_or_float")]
     pub quote_qty: f64,
-    pub time: u64,
+    pub time: i64,
     pub is_buyer_maker: bool,
     pub is_best_match: bool,
 }
