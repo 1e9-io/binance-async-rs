@@ -1,7 +1,6 @@
 use crate::error::{BinanceResponse, Error};
 use chrono::Utc;
 use failure::Fallible;
-use futures::prelude::*;
 use headers::*;
 use hex::encode as hexify;
 use hmac::{Hmac, Mac};
@@ -74,109 +73,85 @@ impl Transport {
         }
     }
 
-    pub fn get<O, Q>(
-        &self,
-        endpoint: &str,
-        params: Option<Q>,
-    ) -> Fallible<impl Future<Output = Fallible<O>>>
+    pub async fn get<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Fallible<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
     {
         self.request::<_, _, ()>(Method::GET, endpoint, params, None)
+            .await
     }
 
-    pub fn post<O, D>(
-        &self,
-        endpoint: &str,
-        data: Option<D>,
-    ) -> Fallible<impl Future<Output = Fallible<O>>>
+    pub async fn post<O, D>(&self, endpoint: &str, data: Option<D>) -> Fallible<O>
     where
         O: DeserializeOwned,
         D: Serialize,
     {
         self.request::<_, (), _>(Method::POST, endpoint, None, data)
+            .await
     }
 
-    pub fn put<O, D>(
-        &self,
-        endpoint: &str,
-        data: Option<D>,
-    ) -> Fallible<impl Future<Output = Fallible<O>>>
+    pub async fn put<O, D>(&self, endpoint: &str, data: Option<D>) -> Fallible<O>
     where
         O: DeserializeOwned,
         D: Serialize,
     {
         self.request::<_, (), _>(Method::PUT, endpoint, None, data)
+            .await
     }
 
-    pub fn delete<O, Q>(
-        &self,
-        endpoint: &str,
-        params: Option<Q>,
-    ) -> Fallible<impl Future<Output = Fallible<O>>>
+    pub async fn delete<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Fallible<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
     {
         self.request::<_, _, ()>(Method::DELETE, endpoint, params, None)
+            .await
     }
 
-    pub fn signed_get<O, Q>(
-        &self,
-        endpoint: &str,
-        params: Option<Q>,
-    ) -> Fallible<impl Future<Output = Fallible<O>>>
+    pub async fn signed_get<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Fallible<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
     {
         self.signed_request::<_, _, ()>(Method::GET, endpoint, params, None)
+            .await
     }
 
-    pub fn signed_post<O, D>(
-        &self,
-        endpoint: &str,
-        data: Option<D>,
-    ) -> Fallible<impl Future<Output = Fallible<O>>>
+    pub async fn signed_post<O, D>(&self, endpoint: &str, data: Option<D>) -> Fallible<O>
     where
         O: DeserializeOwned,
         D: Serialize,
     {
         self.signed_request::<_, (), _>(Method::POST, endpoint, None, data)
+            .await
     }
 
-    pub fn signed_put<O, Q>(
-        &self,
-        endpoint: &str,
-        params: Option<Q>,
-    ) -> Fallible<impl Future<Output = Fallible<O>>>
+    pub async fn signed_put<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Fallible<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
     {
         self.signed_request::<_, _, ()>(Method::PUT, endpoint, params, None)
+            .await
     }
 
-    pub fn signed_delete<O, Q>(
-        &self,
-        endpoint: &str,
-        params: Option<Q>,
-    ) -> Fallible<impl Future<Output = Fallible<O>>>
+    pub async fn signed_delete<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Fallible<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
     {
         self.signed_request::<_, _, ()>(Method::DELETE, endpoint, params, None)
+            .await
     }
 
-    pub fn request<O, Q, D>(
+    pub async fn request<O, Q, D>(
         &self,
         method: Method,
         endpoint: &str,
         params: Option<Q>,
         data: Option<D>,
-    ) -> Fallible<impl Future<Output = Fallible<O>>>
+    ) -> Fallible<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
@@ -206,23 +181,21 @@ impl Transport {
 
         let req = req.body(body);
 
-        Ok(async move {
-            Ok(req
-                .send()
-                .await?
-                .json::<BinanceResponse<_>>()
-                .await?
-                .into_result()?)
-        })
+        Ok(req
+            .send()
+            .await?
+            .json::<BinanceResponse<_>>()
+            .await?
+            .into_result()?)
     }
 
-    pub fn signed_request<O, Q, D>(
+    pub async fn signed_request<O, Q, D>(
         &self,
         method: Method,
         endpoint: &str,
         params: Option<Q>,
         data: Option<D>,
-    ) -> Fallible<impl Future<Output = Fallible<O>>>
+    ) -> Fallible<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
@@ -249,14 +222,20 @@ impl Transport {
             .typed_header(BinanceApiKey(key.to_string()))
             .body(body);
 
-        Ok(async move {
-            Ok(req
-                .send()
-                .await?
-                .json::<BinanceResponse<_>>()
-                .await?
-                .into_result()?)
-        })
+        // Ok(async move {
+        //     Ok(req
+        //         .send()
+        //         .await?
+        //         .json::<BinanceResponse<_>>()
+        //         .await?
+        //         .into_result()?)
+        // })
+        Ok(req
+            .send()
+            .await?
+            .json::<BinanceResponse<_>>()
+            .await?
+            .into_result()?)
     }
 
     fn check_key(&self) -> Fallible<(&str, &str)> {

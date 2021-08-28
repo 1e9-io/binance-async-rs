@@ -10,7 +10,7 @@ async fn ping() -> Fallible<()> {
 
     let binance = Binance::new();
 
-    binance.ping()?.await?;
+    binance.ping().await?;
 
     Ok(())
 }
