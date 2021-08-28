@@ -222,14 +222,6 @@ impl Transport {
             .typed_header(BinanceApiKey(key.to_string()))
             .body(body);
 
-        // Ok(async move {
-        //     Ok(req
-        //         .send()
-        //         .await?
-        //         .json::<BinanceResponse<_>>()
-        //         .await?
-        //         .into_result()?)
-        // })
         Ok(req
             .send()
             .await?
