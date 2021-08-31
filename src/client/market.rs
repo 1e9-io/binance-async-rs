@@ -7,112 +7,101 @@ use crate::{
     },
 };
 use failure::Fallible;
-use futures::prelude::*;
 use serde_json::{json, Value};
 use std::{collections::HashMap, iter::FromIterator};
 
 // Market Data endpoints
 impl Binance {
     // Order book (Default 100; max 100)
-    pub fn get_depth<I>(
-        &self,
-        symbol: &str,
-        limit: I,
-    ) -> Fallible<impl Future<Output = Fallible<OrderBook>>>
+    pub async fn get_depth<I>(&self, symbol: &str, limit: I) -> Fallible<OrderBook>
     where
         I: Into<Option<u64>>,
     {
         let limit = limit.into().unwrap_or(100);
         let params = json! {{"symbol": symbol, "limit": limit}};
 
-        Ok(self.transport.get("/api/v1/depth", Some(params))?)
+        Ok(self.transport.get("/api/v1/depth", Some(params)).await?)
     }
 
     // Latest price for ALL symbols.
-    pub fn get_all_prices(&self) -> Fallible<impl Future<Output = Fallible<Prices>>> {
+    pub async fn get_all_prices(&self) -> Fallible<Prices> {
         Ok(self
             .transport
-            .get::<_, ()>("/api/v1/ticker/allPrices", None)?)
+            .get::<_, ()>("/api/v1/ticker/allPrices", None)
+            .await?)
     }
 
     // Latest price for ONE symbol.
-    pub fn get_price(&self, symbol: &str) -> Fallible<impl Future<Output = Fallible<f64>>> {
+    pub async fn get_price(&self, symbol: &str) -> Fallible<f64> {
         let symbol = symbol.to_string();
-        let all_prices = self.get_all_prices()?;
-        Ok(async move {
-            let Prices::AllPrices(prices) = all_prices.await?;
-            Ok(prices
-                .into_iter()
-                .find_map(|obj| {
-                    if obj.symbol == symbol {
-                        Some(obj.price)
-                    } else {
-                        None
-                    }
-                })
-                .ok_or_else(|| Error::SymbolNotFound)?)
-        })
+        let all_prices = self.get_all_prices();
+        let Prices::AllPrices(prices) = all_prices.await?;
+        Ok(prices
+            .into_iter()
+            .find_map(|obj| {
+                if obj.symbol == symbol {
+                    Some(obj.price)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| Error::SymbolNotFound)?)
     }
 
-    pub fn get_historical_trades(
+    pub async fn get_historical_trades(
         &self,
         symbol: &str,
         limit: u16,
         from_id: u64,
-    ) -> Fallible<impl Future<Output = Fallible<Vec<HistoricalTrade>>>> {
+    ) -> Fallible<Vec<HistoricalTrade>> {
         let params = json! {{"symbol":symbol, "limit": limit, "fromId": from_id}};
-        let historical_trades = self
+        Ok(self
             .transport
-            .get("/api/v3/historicalTrades", Some(params))?;
-
-        Ok(historical_trades)
+            .get("/api/v3/historicalTrades", Some(params))
+            .await?)
     }
 
     // Symbols order book ticker
     // -> Best price/qty on the order book for ALL symbols.
-    pub fn get_all_book_tickers(&self) -> Fallible<impl Future<Output = Fallible<BookTickers>>> {
+    pub async fn get_all_book_tickers(&self) -> Fallible<BookTickers> {
         Ok(self
             .transport
-            .get::<_, ()>("/api/v1/ticker/allBookTickers", None)?)
+            .get::<_, ()>("/api/v1/ticker/allBookTickers", None)
+            .await?)
     }
 
     // -> Best price/qty on the order book for ONE symbol
-    pub fn get_book_ticker(
-        &self,
-        symbol: &str,
-    ) -> Fallible<impl Future<Output = Fallible<Ticker>>> {
+    pub async fn get_book_ticker(&self, symbol: &str) -> Fallible<Ticker> {
         let symbol = symbol.to_string();
-        let all_book_tickers = self.get_all_book_tickers()?;
+        let all_book_tickers = self.get_all_book_tickers();
 
-        Ok(async move {
-            let BookTickers::AllBookTickers(book_tickers) = all_book_tickers.await?;
+        let BookTickers::AllBookTickers(book_tickers) = all_book_tickers.await?;
 
-            Ok(book_tickers
-                .into_iter()
-                .find(|obj| obj.symbol == symbol)
-                .ok_or_else(|| Error::SymbolNotFound)?)
-        })
+        Ok(book_tickers
+            .into_iter()
+            .find(|obj| obj.symbol == symbol)
+            .ok_or_else(|| Error::SymbolNotFound)?)
     }
 
     // 24hr ticker price change statistics
-    pub fn get_24h_price_stats(
-        &self,
-        symbol: &str,
-    ) -> Fallible<impl Future<Output = Fallible<PriceStats>>> {
+    pub async fn get_24h_price_stats(&self, symbol: &str) -> Fallible<PriceStats> {
         let params = json! {{"symbol": symbol}};
-        Ok(self.transport.get("/api/v1/ticker/24hr", Some(params))?)
+        Ok(self
+            .transport
+            .get("/api/v1/ticker/24hr", Some(params))
+            .await?)
     }
 
     // Returns up to 'limit' klines for given symbol and interval ("1m", "5m", ...)
     // https://github.com/binance-exchange/binance-official-api-docs/blob/master/rest-api.md#klinecandlestick-data
-    pub fn get_klines<S3, S4, S5>(
+    pub async fn get_klines<S3, S4, S5>(
         &self,
         symbol: &str,
         interval: &str,
         limit: S3,
         start_time: S4,
         end_time: S5,
-    ) -> Fallible<impl Future<Output = Fallible<KlineSummaries>>>
+    ) -> Fallible<KlineSummaries>
     where
         S3: Into<Option<u16>>,
         S4: Into<Option<u64>>,
@@ -135,38 +124,35 @@ impl Binance {
         }
         let params: HashMap<&str, String> = HashMap::from_iter(params);
 
-        let f = self.transport.get("/api/v1/klines", Some(params))?;
+        let f = self.transport.get("/api/v1/klines", Some(params));
 
-        Ok({
-            async move {
-                let data: Vec<Vec<Value>> = f.await?;
+        let data: Vec<Vec<Value>> = f.await?;
 
-                Ok(KlineSummaries::AllKlineSummaries(
-                    data.iter()
-                        .map(|row| KlineSummary {
-                            open_time: to_i64(&row[0]),
-                            open: to_f64(&row[1]),
-                            high: to_f64(&row[2]),
-                            low: to_f64(&row[3]),
-                            close: to_f64(&row[4]),
-                            volume: to_f64(&row[5]),
-                            close_time: to_i64(&row[6]),
-                            quote_asset_volume: to_f64(&row[7]),
-                            number_of_trades: to_i64(&row[8]),
-                            taker_buy_base_asset_volume: to_f64(&row[9]),
-                            taker_buy_quote_asset_volume: to_f64(&row[10]),
-                        })
-                        .collect(),
-                ))
-            }
-        })
+        Ok(KlineSummaries::AllKlineSummaries(
+            data.iter()
+                .map(|row| KlineSummary {
+                    open_time: to_i64(&row[0]),
+                    open: to_f64(&row[1]),
+                    high: to_f64(&row[2]),
+                    low: to_f64(&row[3]),
+                    close: to_f64(&row[4]),
+                    volume: to_f64(&row[5]),
+                    close_time: to_i64(&row[6]),
+                    quote_asset_volume: to_f64(&row[7]),
+                    number_of_trades: to_i64(&row[8]),
+                    taker_buy_base_asset_volume: to_f64(&row[9]),
+                    taker_buy_quote_asset_volume: to_f64(&row[10]),
+                })
+                .collect(),
+        ))
     }
 
     // 24hr ticker price change statistics
-    pub fn get_24h_price_stats_all(
-        &self,
-    ) -> Fallible<impl Future<Output = Fallible<Vec<PriceStats>>>> {
-        Ok(self.transport.get::<_, ()>("/api/v1/ticker/24hr", None)?)
+    pub async fn get_24h_price_stats_all(&self) -> Fallible<Vec<PriceStats>> {
+        Ok(self
+            .transport
+            .get::<_, ()>("/api/v1/ticker/24hr", None)
+            .await?)
     }
 }
 

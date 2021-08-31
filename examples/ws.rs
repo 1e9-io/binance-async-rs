@@ -12,7 +12,7 @@ async fn main() -> Fallible<()> {
     let api_secret_user = var("BINANCE_SECRET")?;
 
     let bn = Binance::with_credential(&api_key_user, &api_secret_user);
-    match bn.user_stream_start()?.await {
+    match bn.user_stream_start().await {
         Ok(_) => {
             println!("Data Stream Started ...");
 

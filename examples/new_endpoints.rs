@@ -12,7 +12,7 @@ async fn main() -> Fallible<()> {
 
     let bn = Binance::with_credential(&api_key, &secret_key);
 
-    match bn.get_historical_trades("BTCUSDT", 10, 963563573)?.await {
+    match bn.get_historical_trades("BTCUSDT", 10, 963563573).await {
         Ok(answer) => println!("{:?}", answer),
         Err(e) => println!("Error: {}", e),
     }
