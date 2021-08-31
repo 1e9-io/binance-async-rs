@@ -1,18 +1,18 @@
 use serde::{Deserialize, Serialize};
-use snafu::*;
+use thiserror::Error;
 
 #[allow(clippy::pub_enum_variant_names)]
-#[derive(Deserialize, Serialize, Debug, Clone, Snafu)]
+#[derive(Error,Deserialize, Serialize, Debug, Clone)]
 pub enum Error {
-    #[snafu(display("Binance error: {}: {}", code, msg))]
+    #[error("Binance error: {}: {}", code, msg)]
     BinanceError { code: i64, msg: String },
-    #[snafu(display("Assets not found"))]
+    #[error("Assets not found")]
     AssetsNotFound,
-    #[snafu(display("Symbol not found"))]
+    #[error("Symbol not found")]
     SymbolNotFound,
-    #[snafu(display("No Api key set for private api"))]
+    #[error("No Api key set for private api")]
     NoApiKeySet,
-    #[snafu(display("No stream is subscribed"))]
+    #[error("No stream is subscribed")]
     NoStreamSubscribed,
 }
 
