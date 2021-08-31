@@ -23,12 +23,9 @@ name = "binance_async"
 path = "src/lib.rs"
 
 [dependencies]
-failure = "0.1.8"
 tracing = "0.1.25"
-
 tungstenite = "0.13.0"
 tokio-tungstenite = { version = "0.13.0", features = ["tls"] }
-
 url = "2.2.1"
 futures = "0.3.13"
 headers = "0.3.4"

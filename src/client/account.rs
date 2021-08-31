@@ -6,8 +6,8 @@ use crate::{
         OrderCanceled, TradeHistory, Transaction,
     },
 };
+use anyhow::Result;
 use chrono::prelude::*;
-use failure::Fallible;
 use serde_json::json;
 use std::collections::HashMap;
 
@@ -30,7 +30,7 @@ struct OrderRequest {
 
 impl Binance {
     // Account Information
-    pub async fn get_account(&self) -> Fallible<AccountInformation> {
+    pub async fn get_account(&self) -> Result<AccountInformation> {
         let account_info = self
             .transport
             .signed_get::<_, ()>("/api/v3/account", None)
@@ -39,7 +39,7 @@ impl Binance {
     }
 
     // Balance for ONE Asset
-    pub async fn get_balance(&self, asset: &str) -> Fallible<Balance> {
+    pub async fn get_balance(&self, asset: &str) -> Result<Balance> {
         let asset = asset.to_string();
         self.get_account()
             .await?
@@ -50,7 +50,7 @@ impl Binance {
     }
 
     // Current open orders for ONE symbol
-    pub async fn get_open_orders(&self, symbol: &str) -> Fallible<Vec<Order>> {
+    pub async fn get_open_orders(&self, symbol: &str) -> Result<Vec<Order>> {
         let params = json! {{"symbol": symbol}};
         let orders = self
             .transport
@@ -60,7 +60,7 @@ impl Binance {
     }
 
     // All current open orders
-    pub async fn get_all_open_orders(&self) -> Fallible<Vec<Order>> {
+    pub async fn get_all_open_orders(&self) -> Result<Vec<Order>> {
         let orders = self
             .transport
             .signed_get::<_, ()>("/api/v3/openOrders", None)
@@ -69,7 +69,7 @@ impl Binance {
     }
 
     // Check an order's status
-    pub async fn order_status(&self, symbol: &str, order_id: u64) -> Fallible<Order> {
+    pub async fn order_status(&self, symbol: &str, order_id: u64) -> Result<Order> {
         let params = json! {{"symbol": symbol, "orderId": order_id}};
 
         let order = self
@@ -80,7 +80,7 @@ impl Binance {
     }
 
     // Place a LIMIT order - BUY
-    pub async fn limit_buy(&self, symbol: &str, qty: f64, price: f64) -> Fallible<Transaction> {
+    pub async fn limit_buy(&self, symbol: &str, qty: f64, price: f64) -> Result<Transaction> {
         let order = OrderRequest {
             symbol: symbol.into(),
             qty,
@@ -100,7 +100,7 @@ impl Binance {
     }
 
     // Place a LIMIT order - SELL
-    pub async fn limit_sell(&self, symbol: &str, qty: f64, price: f64) -> Fallible<Transaction> {
+    pub async fn limit_sell(&self, symbol: &str, qty: f64, price: f64) -> Result<Transaction> {
         let order = OrderRequest {
             symbol: symbol.into(),
             qty,
@@ -119,7 +119,7 @@ impl Binance {
     }
 
     // Place a MARKET order - BUY
-    pub async fn market_buy(&self, symbol: &str, qty: f64) -> Fallible<Transaction> {
+    pub async fn market_buy(&self, symbol: &str, qty: f64) -> Result<Transaction> {
         let order = OrderRequest {
             symbol: symbol.into(),
             qty,
@@ -138,7 +138,7 @@ impl Binance {
     }
 
     // Place a MARKET order - SELL
-    pub async fn market_sell(&self, symbol: &str, qty: f64) -> Fallible<Transaction> {
+    pub async fn market_sell(&self, symbol: &str, qty: f64) -> Result<Transaction> {
         let order = OrderRequest {
             symbol: symbol.into(),
             qty,
@@ -156,7 +156,7 @@ impl Binance {
     }
 
     // Check an order's status
-    pub async fn cancel_order(&self, symbol: &str, order_id: u64) -> Fallible<OrderCanceled> {
+    pub async fn cancel_order(&self, symbol: &str, order_id: u64) -> Result<OrderCanceled> {
         let params = json! {{"symbol":symbol, "orderId":order_id}};
         let order_canceled = self
             .transport
@@ -166,7 +166,7 @@ impl Binance {
     }
 
     // Trade history
-    pub async fn trade_history(&self, symbol: &str) -> Fallible<Vec<TradeHistory>> {
+    pub async fn trade_history(&self, symbol: &str) -> Result<Vec<TradeHistory>> {
         let params = json! {{"symbol":symbol}};
         let trade_history = self
             .transport
@@ -175,7 +175,7 @@ impl Binance {
         Ok(trade_history)
     }
 
-    pub async fn get_deposit_address(&self, symbol: &str) -> Fallible<DepositAddressData> {
+    pub async fn get_deposit_address(&self, symbol: &str) -> Result<DepositAddressData> {
         let params = json! {{"asset":symbol}};
         let deposit_address = self
             .transport
@@ -189,7 +189,7 @@ impl Binance {
         symbol: Option<&str>,
         start_time: Option<DateTime<Utc>>,
         end_time: Option<DateTime<Utc>>,
-    ) -> Fallible<DepositHistory> {
+    ) -> Result<DepositHistory> {
         let params = json! {{"asset":symbol, "startTime":start_time.map(|t| t.timestamp_millis()), "endTime":end_time.map(|t| t.timestamp_millis())}};
         let deposit_history = self
             .transport
@@ -198,7 +198,7 @@ impl Binance {
         Ok(deposit_history)
     }
 
-    pub async fn asset_detail(&self) -> Fallible<AssetDetail> {
+    pub async fn asset_detail(&self) -> Result<AssetDetail> {
         let asset_detail = self
             .transport
             .signed_get::<_, ()>("/wapi/v3/assetDetail.html", None)

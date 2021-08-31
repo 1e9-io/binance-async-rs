@@ -1,6 +1,6 @@
 use crate::error::{BinanceResponse, Error};
+use anyhow::Result;
 use chrono::Utc;
-use failure::Fallible;
 use headers::*;
 use hex::encode as hexify;
 use hmac::{Hmac, Mac};
@@ -73,7 +73,7 @@ impl Transport {
         }
     }
 
-    pub async fn get<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Fallible<O>
+    pub async fn get<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Result<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
@@ -82,7 +82,7 @@ impl Transport {
             .await
     }
 
-    pub async fn post<O, D>(&self, endpoint: &str, data: Option<D>) -> Fallible<O>
+    pub async fn post<O, D>(&self, endpoint: &str, data: Option<D>) -> Result<O>
     where
         O: DeserializeOwned,
         D: Serialize,
@@ -91,7 +91,7 @@ impl Transport {
             .await
     }
 
-    pub async fn put<O, D>(&self, endpoint: &str, data: Option<D>) -> Fallible<O>
+    pub async fn put<O, D>(&self, endpoint: &str, data: Option<D>) -> Result<O>
     where
         O: DeserializeOwned,
         D: Serialize,
@@ -100,7 +100,7 @@ impl Transport {
             .await
     }
 
-    pub async fn delete<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Fallible<O>
+    pub async fn delete<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Result<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
@@ -109,7 +109,7 @@ impl Transport {
             .await
     }
 
-    pub async fn signed_get<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Fallible<O>
+    pub async fn signed_get<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Result<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
@@ -118,7 +118,7 @@ impl Transport {
             .await
     }
 
-    pub async fn signed_post<O, D>(&self, endpoint: &str, data: Option<D>) -> Fallible<O>
+    pub async fn signed_post<O, D>(&self, endpoint: &str, data: Option<D>) -> Result<O>
     where
         O: DeserializeOwned,
         D: Serialize,
@@ -127,7 +127,7 @@ impl Transport {
             .await
     }
 
-    pub async fn signed_put<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Fallible<O>
+    pub async fn signed_put<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Result<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
@@ -136,7 +136,7 @@ impl Transport {
             .await
     }
 
-    pub async fn signed_delete<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Fallible<O>
+    pub async fn signed_delete<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Result<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
@@ -151,7 +151,7 @@ impl Transport {
         endpoint: &str,
         params: Option<Q>,
         data: Option<D>,
-    ) -> Fallible<O>
+    ) -> Result<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
@@ -195,7 +195,7 @@ impl Transport {
         endpoint: &str,
         params: Option<Q>,
         data: Option<D>,
-    ) -> Fallible<O>
+    ) -> Result<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
@@ -230,14 +230,14 @@ impl Transport {
             .into_result()?)
     }
 
-    fn check_key(&self) -> Fallible<(&str, &str)> {
+    fn check_key(&self) -> Result<(&str, &str)> {
         match self.credential.as_ref() {
             None => Err(Error::NoApiKeySet.into()),
             Some((k, s)) => Ok((k, s)),
         }
     }
 
-    pub(self) fn signature(&self, url: &Url, body: &str) -> Fallible<(&str, String)> {
+    pub(self) fn signature(&self, url: &Url, body: &str) -> Result<(&str, String)> {
         let (key, secret) = self.check_key()?;
         // Signature: hex(HMAC_SHA256(queries + data))
         let mut mac = Hmac::<Sha256>::new_varkey(secret.as_bytes()).unwrap();
@@ -281,11 +281,11 @@ impl<S: Serialize> ToUrlQuery for S {}
 #[cfg(test)]
 mod test {
     use super::Transport;
-    use failure::Fallible;
+    use anyhow::Result;
     use url::{form_urlencoded::Serializer, Url};
 
     #[test]
-    fn signature_query() -> Fallible<()> {
+    fn signature_query() -> Result<()> {
         let tr = Transport::with_credential(
             "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A",
             "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j",
@@ -314,7 +314,7 @@ mod test {
     }
 
     #[test]
-    fn signature_body() -> Fallible<()> {
+    fn signature_body() -> Result<()> {
         let tr = Transport::with_credential(
             "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A",
             "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j",
@@ -340,7 +340,7 @@ mod test {
     }
 
     #[test]
-    fn signature_query_body() -> Fallible<()> {
+    fn signature_query_body() -> Result<()> {
         let tr = Transport::with_credential(
             "vmPUZE6mv9SD5VNHk4HlWFsOr6aKE2zvsw0MuIgwCIPy6utIco14y7Ju91duEh8A",
             "NhqPtmdSJYdKjVHjA7PZj4Mge3R5YNiP1e3UZjInClVN65XAbvqqM6A7H5fATj0j",
@@ -374,7 +374,7 @@ mod test {
     }
 
     #[test]
-    fn signature_body2() -> Fallible<()> {
+    fn signature_body2() -> Result<()> {
         let tr = Transport::with_credential(
             "vj1e6h50pFN9CsXT5nsL25JkTuBHkKw3zJhsA6OPtruIRalm20vTuXqF3htCZeWW",
             "5Cjj09rLKWNVe7fSalqgpilh5I3y6pPplhOukZChkusLqqi9mQyFk34kJJBTdlEJ",

@@ -1,11 +1,8 @@
-use binance_async as binance;
-
-use failure::Fallible;
-
-use crate::binance::Binance;
+use anyhow::Result;
+use binance_async::Binance;
 
 #[tokio::test]
-async fn ping() -> Fallible<()> {
+async fn ping() -> Result<()> {
     tracing::subscriber::set_global_default(tracing_subscriber::FmtSubscriber::new()).unwrap();
 
     let binance = Binance::new();

@@ -2,20 +2,20 @@ use crate::{
     client::Binance,
     model::{ExchangeInfo, ExchangeInformation, ServerTime},
 };
-use failure::Fallible;
+use anyhow::Result;
 
 impl Binance {
     // Test connectivity
-    pub async fn ping(&self) -> Fallible<String> {
+    pub async fn ping(&self) -> Result<String> {
         Ok(self.transport.get::<_, ()>("/api/v1/ping", None).await?)
     }
 
     // Check server time
-    pub async fn get_server_time(&self) -> Fallible<ServerTime> {
+    pub async fn get_server_time(&self) -> Result<ServerTime> {
         Ok(self.transport.get::<_, ()>("/api/v1/time", None).await?)
     }
 
-    pub async fn get_exchange_info(&self) -> Fallible<ExchangeInfo> {
+    pub async fn get_exchange_info(&self) -> Result<ExchangeInfo> {
         Ok(self
             .transport
             .get::<_, ()>("/api/v1/exchangeInfo", None)
@@ -23,7 +23,7 @@ impl Binance {
     }
 
     // Obtain exchange information (rate limits, symbol metadata etc)
-    pub async fn exchange_info(&self) -> Fallible<ExchangeInformation> {
+    pub async fn exchange_info(&self) -> Result<ExchangeInformation> {
         Ok(self
             .transport
             .get::<_, ()>("/api/v1/exchangeInfo", None)
