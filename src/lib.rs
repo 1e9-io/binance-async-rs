@@ -5,5 +5,6 @@ mod client;
 pub mod error;
 pub mod model;
 mod transport;
+mod tests;
 
 pub use crate::client::{websocket::BinanceWebsocket, Binance};

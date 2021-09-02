@@ -5,16 +5,35 @@ use headers::*;
 use hex::encode as hexify;
 use hmac::{Hmac, Mac};
 use http::Method;
+use log::debug;
 use once_cell::sync::OnceCell;
 use reqwest_ext::*;
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{to_string, to_value, Value};
 use sha2::Sha256;
+use std::fmt;
 use std::str::FromStr;
 use tracing::*;
 use url::Url;
 
-const BASE: &str = "https://www.binance.com";
+const BASE: &str = "https://www.binance.com/api";
+
+pub enum Version {
+    V1,
+    V2,
+    V3,
+}
+
+impl fmt::Display for Version {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Version::V1 => write!(f, "/v1"),
+            Version::V2 => write!(f, "/v2"),
+            Version::V3 => write!(f, "/v3"),
+        }
+    }
+}
+
 const RECV_WINDOW: usize = 5000;
 
 pub struct BinanceApiKey(pub String);
@@ -73,81 +92,122 @@ impl Transport {
         }
     }
 
-    pub async fn get<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Result<O>
+    pub async fn get<O, Q>(
+        &self,
+        api_version: Version,
+        endpoint: &str,
+        params: Option<Q>,
+    ) -> Result<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
     {
-        self.request::<_, _, ()>(Method::GET, endpoint, params, None)
+        self.request::<_, _, ()>(Method::GET, api_version, endpoint, params, None)
             .await
     }
 
-    pub async fn post<O, D>(&self, endpoint: &str, data: Option<D>) -> Result<O>
+    pub async fn post<O, D>(
+        &self,
+        api_version: Version,
+        endpoint: &str,
+        data: Option<D>,
+    ) -> Result<O>
     where
         O: DeserializeOwned,
         D: Serialize,
     {
-        self.request::<_, (), _>(Method::POST, endpoint, None, data)
+        self.request::<_, (), _>(Method::POST, api_version, endpoint, None, data)
             .await
     }
 
-    pub async fn put<O, D>(&self, endpoint: &str, data: Option<D>) -> Result<O>
+    pub async fn put<O, D>(
+        &self,
+        api_version: Version,
+        endpoint: &str,
+        data: Option<D>,
+    ) -> Result<O>
     where
         O: DeserializeOwned,
         D: Serialize,
     {
-        self.request::<_, (), _>(Method::PUT, endpoint, None, data)
+        self.request::<_, (), _>(Method::PUT, api_version, endpoint, None, data)
             .await
     }
 
-    pub async fn delete<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Result<O>
+    pub async fn delete<O, Q>(
+        &self,
+        api_version: Version,
+        endpoint: &str,
+        params: Option<Q>,
+    ) -> Result<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
     {
-        self.request::<_, _, ()>(Method::DELETE, endpoint, params, None)
+        self.request::<_, _, ()>(Method::DELETE, api_version, endpoint, params, None)
             .await
     }
 
-    pub async fn signed_get<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Result<O>
+    pub async fn signed_get<O, Q>(
+        &self,
+        api_version: Version,
+        endpoint: &str,
+        params: Option<Q>,
+    ) -> Result<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
     {
-        self.signed_request::<_, _, ()>(Method::GET, endpoint, params, None)
+        self.signed_request::<_, _, ()>(Method::GET, api_version, endpoint, params, None)
             .await
     }
 
-    pub async fn signed_post<O, D>(&self, endpoint: &str, data: Option<D>) -> Result<O>
+    pub async fn signed_post<O, D>(
+        &self,
+        api_version: Version,
+        endpoint: &str,
+        data: Option<D>,
+    ) -> Result<O>
     where
         O: DeserializeOwned,
         D: Serialize,
     {
-        self.signed_request::<_, (), _>(Method::POST, endpoint, None, data)
+        self.signed_request::<_, (), _>(Method::POST, api_version, endpoint, None, data)
             .await
     }
 
-    pub async fn signed_put<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Result<O>
+    pub async fn signed_put<O, Q>(
+        &self,
+        api_version: Version,
+        endpoint: &str,
+        params: Option<Q>,
+    ) -> Result<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
     {
-        self.signed_request::<_, _, ()>(Method::PUT, endpoint, params, None)
+        self.signed_request::<_, _, ()>(Method::PUT, api_version, endpoint, params, None)
             .await
     }
 
-    pub async fn signed_delete<O, Q>(&self, endpoint: &str, params: Option<Q>) -> Result<O>
+    pub async fn signed_delete<O, Q>(
+        &self,
+        api_version: Version,
+        endpoint: &str,
+        params: Option<Q>,
+    ) -> Result<O>
     where
         O: DeserializeOwned,
         Q: Serialize,
     {
-        self.signed_request::<_, _, ()>(Method::DELETE, endpoint, params, None)
+        self.signed_request::<_, _, ()>(Method::DELETE, api_version, endpoint, params, None)
             .await
     }
 
     pub async fn request<O, Q, D>(
         &self,
         method: Method,
+        api_version: Version,
         endpoint: &str,
         params: Option<Q>,
         data: Option<D>,
@@ -157,7 +217,8 @@ impl Transport {
         Q: Serialize,
         D: Serialize,
     {
-        let url = format!("{}{}", BASE, endpoint);
+        let url = format!("{}{}{}", BASE, api_version, endpoint);
+        debug!("url: {}", url);
         let url = match params {
             Some(p) => Url::parse_with_params(&url, p.to_url_query())?,
             None => Url::parse(&url)?,
@@ -171,7 +232,7 @@ impl Transport {
         let mut req = self
             .client
             .request(method, url.as_str())
-            .typed_header(headers::UserAgent::from_static("binance-rs"))
+            .typed_header(headers::UserAgent::from_static("binance-async-rs"))
             .typed_header(headers::ContentType::form_url_encoded());
 
         if let Ok((key, _)) = self.check_key() {
@@ -192,6 +253,7 @@ impl Transport {
     pub async fn signed_request<O, Q, D>(
         &self,
         method: Method,
+        api_version: Version,
         endpoint: &str,
         params: Option<Q>,
         data: Option<D>,
@@ -202,7 +264,7 @@ impl Transport {
         D: Serialize,
     {
         let query = params.map_or_else(Vec::new, |q| q.to_url_query());
-        let url = format!("{}{}", BASE, endpoint);
+        let url = format!("{}{}{}", BASE, api_version, endpoint);
         let mut url = Url::parse_with_params(&url, &query)?;
         url.query_pairs_mut()
             .append_pair("timestamp", &Utc::now().timestamp_millis().to_string());
@@ -214,10 +276,12 @@ impl Transport {
         let (key, signature) = self.signature(&url, &body)?;
         url.query_pairs_mut().append_pair("signature", &signature);
 
+        debug!("url: {}", url);
+
         let req = self
             .client
             .request(method, url.as_str())
-            .typed_header(headers::UserAgent::from_static("binance-rs"))
+            .typed_header(headers::UserAgent::from_static("binance-async-rs"))
             .typed_header(headers::ContentType::form_url_encoded())
             .typed_header(BinanceApiKey(key.to_string()))
             .body(body);

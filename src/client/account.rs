@@ -1,13 +1,10 @@
 use crate::error::Error;
+use crate::transport::Version;
 use crate::{
     client::Binance,
-    model::{
-        AccountInformation, AssetDetail, Balance, DepositAddressData, DepositHistory, Order,
-        OrderCanceled, TradeHistory, Transaction,
-    },
+    model::{AccountInformation, Balance, Order, OrderCanceled, TradeHistory, Transaction},
 };
 use anyhow::Result;
-use chrono::prelude::*;
 use serde_json::json;
 use std::collections::HashMap;
 
@@ -16,8 +13,6 @@ const ORDER_TYPE_MARKET: &str = "MARKET";
 const ORDER_SIDE_BUY: &str = "BUY";
 const ORDER_SIDE_SELL: &str = "SELL";
 const TIME_IN_FORCE_GTC: &str = "GTC";
-
-const API_V3_ORDER: &str = "/api/v3/order";
 
 struct OrderRequest {
     pub symbol: String,
@@ -31,16 +26,15 @@ struct OrderRequest {
 impl Binance {
     // Account Information
     pub async fn get_account(&self) -> Result<AccountInformation> {
-        let account_info = self
+        Ok(self
             .transport
-            .signed_get::<_, ()>("/api/v3/account", None)
-            .await?;
-        Ok(account_info)
+            .signed_get::<_, ()>(Version::V3, "/account", None)
+            .await?)
     }
 
     // Balance for ONE Asset
     pub async fn get_balance(&self, asset: &str) -> Result<Balance> {
-        let asset = asset.to_string();
+        let asset = asset.to_string().to_uppercase();
         self.get_account()
             .await?
             .balances
@@ -51,10 +45,10 @@ impl Binance {
 
     // Current open orders for ONE symbol
     pub async fn get_open_orders(&self, symbol: &str) -> Result<Vec<Order>> {
-        let params = json! {{"symbol": symbol}};
+        let params = json! {{"symbol": symbol.to_uppercase()}};
         let orders = self
             .transport
-            .signed_get("/api/v3/openOrders", Some(params))
+            .signed_get(Version::V3, "/openOrders", Some(params))
             .await?;
         Ok(orders)
     }
@@ -63,20 +57,18 @@ impl Binance {
     pub async fn get_all_open_orders(&self) -> Result<Vec<Order>> {
         let orders = self
             .transport
-            .signed_get::<_, ()>("/api/v3/openOrders", None)
+            .signed_get::<_, ()>(Version::V3, "/openOrders", None)
             .await?;
         Ok(orders)
     }
 
     // Check an order's status
     pub async fn order_status(&self, symbol: &str, order_id: u64) -> Result<Order> {
-        let params = json! {{"symbol": symbol, "orderId": order_id}};
-
-        let order = self
+        let params = json! {{"symbol": symbol.to_uppercase(), "orderId": order_id}};
+        Ok(self
             .transport
-            .signed_get(API_V3_ORDER, Some(params))
-            .await?;
-        Ok(order)
+            .signed_get(Version::V3, "/order", Some(params))
+            .await?)
     }
 
     // Place a LIMIT order - BUY
@@ -93,7 +85,7 @@ impl Binance {
 
         let transaction = self
             .transport
-            .signed_post(API_V3_ORDER, Some(params))
+            .signed_post(Version::V3, "/order", Some(params))
             .await?;
 
         Ok(transaction)
@@ -112,7 +104,7 @@ impl Binance {
         let params = Self::build_order(order);
         let transaction = self
             .transport
-            .signed_post(API_V3_ORDER, Some(params))
+            .signed_post(Version::V3, "/order", Some(params))
             .await?;
 
         Ok(transaction)
@@ -131,7 +123,7 @@ impl Binance {
         let params = Self::build_order(order);
         let transaction = self
             .transport
-            .signed_post(API_V3_ORDER, Some(params))
+            .signed_post(Version::V3, "/order", Some(params))
             .await?;
 
         Ok(transaction)
@@ -150,7 +142,7 @@ impl Binance {
         let params = Self::build_order(order);
         let transaction = self
             .transport
-            .signed_post(API_V3_ORDER, Some(params))
+            .signed_post(Version::V3, "/order", Some(params))
             .await?;
         Ok(transaction)
     }
@@ -160,50 +152,19 @@ impl Binance {
         let params = json! {{"symbol":symbol, "orderId":order_id}};
         let order_canceled = self
             .transport
-            .signed_delete(API_V3_ORDER, Some(params))
+            .signed_delete(Version::V3, "/order", Some(params))
             .await?;
         Ok(order_canceled)
     }
 
     // Trade history
     pub async fn trade_history(&self, symbol: &str) -> Result<Vec<TradeHistory>> {
-        let params = json! {{"symbol":symbol}};
+        let params = json! {{"symbol":symbol.to_uppercase()}};
         let trade_history = self
             .transport
-            .signed_get("/api/v3/myTrades", Some(params))
+            .signed_get(Version::V3, "/myTrades", Some(params))
             .await?;
         Ok(trade_history)
-    }
-
-    pub async fn get_deposit_address(&self, symbol: &str) -> Result<DepositAddressData> {
-        let params = json! {{"asset":symbol}};
-        let deposit_address = self
-            .transport
-            .signed_get("/wapi/v3/depositAddress.html", Some(params))
-            .await?;
-        Ok(deposit_address)
-    }
-
-    pub async fn get_deposit_history(
-        &self,
-        symbol: Option<&str>,
-        start_time: Option<DateTime<Utc>>,
-        end_time: Option<DateTime<Utc>>,
-    ) -> Result<DepositHistory> {
-        let params = json! {{"asset":symbol, "startTime":start_time.map(|t| t.timestamp_millis()), "endTime":end_time.map(|t| t.timestamp_millis())}};
-        let deposit_history = self
-            .transport
-            .signed_get("/wapi/v3/depositHistory.html", Some(params))
-            .await?;
-        Ok(deposit_history)
-    }
-
-    pub async fn asset_detail(&self) -> Result<AssetDetail> {
-        let asset_detail = self
-            .transport
-            .signed_get::<_, ()>("/wapi/v3/assetDetail.html", None)
-            .await?;
-        Ok(asset_detail)
     }
 
     fn build_order(order: OrderRequest) -> HashMap<&'static str, String> {
@@ -219,5 +180,54 @@ impl Binance {
             params.insert("timeInForce", order.time_in_force.to_string());
         }
         params
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::tests::test::setup;
+    use anyhow::Result;
+
+    #[tokio::test]
+    async fn test_get_account() -> Result<()> {
+        let b = setup()?;
+        b.get_account().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_balance() -> Result<()> {
+        let b = setup()?;
+        b.get_balance("btc").await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_open_orders() -> Result<()> {
+        let b = setup()?;
+        b.get_open_orders("btcusdt").await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_get_all_open_orders() -> Result<()> {
+        let b = setup()?;
+        b.get_all_open_orders().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_order_status() -> Result<()> {
+        let b = setup()?;
+        b.order_status("btcusdt", 1).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_trade_history() -> Result<()> {
+        let b = setup()?;
+        b.trade_history("btcusdt").await?;
+        Ok(())
     }
 }

@@ -1,8 +1,9 @@
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[allow(clippy::pub_enum_variant_names)]
-#[derive(Error,Deserialize, Serialize, Debug, Clone)]
+#[derive(Error, Deserialize, Serialize, Debug, Clone)]
 pub enum Error {
     #[error("Binance error: {}: {}", code, msg)]
     BinanceError { code: i64, msg: String },
