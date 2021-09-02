@@ -2,7 +2,7 @@ use crate::{
     error::Error,
     model::websocket::{AccountUpdate, BinanceWebsocketMessage, Subscription, UserOrderUpdate},
 };
-use failure::Fallible;
+use anyhow::{anyhow, Result};
 use futures::{prelude::*, stream::SplitStream};
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
@@ -33,7 +33,7 @@ pub struct BinanceWebsocket {
 }
 
 impl BinanceWebsocket {
-    pub async fn subscribe(&mut self, subscription: Subscription) -> Fallible<()> {
+    pub async fn subscribe(&mut self, subscription: Subscription) -> Result<()> {
         let sub = match subscription {
             Subscription::AggregateTrade(ref symbol) => format!("{}@aggTrade", symbol),
             Subscription::Candlestick(ref symbol, ref interval) => {
@@ -71,7 +71,7 @@ impl BinanceWebsocket {
 }
 
 impl Stream for BinanceWebsocket {
-    type Item = Fallible<BinanceWebsocketMessage>;
+    type Item = Result<BinanceWebsocketMessage>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         match Pin::new(&mut self.as_mut().get_mut().streams).poll_next(cx) {
@@ -80,7 +80,7 @@ impl Stream for BinanceWebsocket {
                     let sub = self.tokens.get(&token).unwrap();
                     Poll::Ready({
                         Some(
-                            item.map_err(failure::Error::from)
+                            item.map_err(|e| anyhow!("error: {:?}", e))
                                 .and_then(|m| parse_message(sub, m)),
                         )
                     })
@@ -93,13 +93,13 @@ impl Stream for BinanceWebsocket {
     }
 }
 
-fn parse_message(sub: &Subscription, msg: Message) -> Fallible<BinanceWebsocketMessage> {
+fn parse_message(sub: &Subscription, msg: Message) -> Result<BinanceWebsocketMessage> {
     let msg = match msg {
         Message::Text(msg) => msg,
         Message::Binary(b) => return Ok(BinanceWebsocketMessage::Binary(b)),
         Message::Pong(..) => return Ok(BinanceWebsocketMessage::Pong),
         Message::Ping(..) => return Ok(BinanceWebsocketMessage::Ping),
-        Message::Close(..) => return Err(failure::format_err!("Socket closed")),
+        Message::Close(..) => return Err(anyhow!("Socket closed")),
     };
 
     trace!("Incoming websocket message {}", msg);

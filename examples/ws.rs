@@ -1,11 +1,11 @@
-use crate::binance::{model::websocket::Subscription, Binance, BinanceWebsocket};
-use binance_async as binance;
-use failure::Fallible;
+use anyhow::Result;
+use binance_async::model::websocket::Subscription;
+use binance_async::{Binance, BinanceWebsocket};
 use futures::TryStreamExt;
 use std::env::var;
 
 #[tokio::main]
-async fn main() -> Fallible<()> {
+async fn main() -> Result<()> {
     tracing::subscriber::set_global_default(tracing_subscriber::FmtSubscriber::new()).unwrap();
 
     let api_key_user = var("BINANCE_KEY")?;

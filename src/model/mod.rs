@@ -4,7 +4,7 @@ use chrono::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerTime {
     pub server_time: u64,
@@ -16,6 +16,16 @@ pub struct ExchangeInformation {
     pub timezone: String,
     pub server_time: u64,
     pub rate_limits: Vec<RateLimit>,
+    pub symbols: Vec<Symbol>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ExchangeInfo {
+    pub timezone: String,
+    pub server_time: u64,
+    pub rate_limits: Vec<RateLimit>,
+    pub exchange_filters: Vec<ExchangeFilter>,
     pub symbols: Vec<Symbol>,
 }
 
@@ -327,16 +337,6 @@ pub struct Kline {
 //   }]
 // }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct ExchangeInfo {
-    pub timezone: String,
-    pub server_time: u64,
-    pub rate_limits: Vec<RateLimit>,
-    pub exchange_filters: Vec<ExchangeFilter>,
-    pub symbols: Vec<Symbol>,
-}
-
 // {
 //       "rateLimitType": "ORDERS",
 //       "interval": "DAY",
@@ -348,6 +348,7 @@ pub struct RateLimit {
     rate_limit_type: RateLimitType,
     interval: Interval,
     limit: u64,
+    interval_num: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -355,6 +356,7 @@ pub struct RateLimit {
 pub enum RateLimitType {
     Orders,
     RequestWeight,
+    RawRequests,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -387,7 +389,11 @@ pub enum SymbolFilter {
         tick_size: String,
     },
     #[serde(rename_all = "camelCase")]
-    MinNotional { min_notional: String },
+    MinNotional {
+        min_notional: String,
+        apply_to_market: bool,
+        avg_price_mins: u64,
+    },
     #[serde(rename_all = "camelCase")]
     MaxNumAlgoOrders { max_num_algo_orders: u64 },
     #[serde(rename_all = "camelCase")]
@@ -436,9 +442,16 @@ pub struct Symbol {
     pub base_asset_precision: u64,
     pub quote_asset: String,
     pub quote_precision: u64,
-    pub order_types: Vec<String>,
+    pub quote_asset_precision: u64,
+    pub base_commission_precision: u64,
+    pub quote_commission_precision: u64,
+    pub order_types: Vec<OrderType>,
     pub iceberg_allowed: bool,
-    pub filters: Vec<SymbolFilter>,
+    pub oco_allowed: bool,
+    pub quote_order_qty_market_allowed: bool,
+    pub is_spot_trading_allowed: bool,
+    pub is_margin_trading_allowed: bool,
+    // pub filters: Vec<SymbolFilter>, // TODO work out why this isnt deserializing
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

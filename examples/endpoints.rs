@@ -1,10 +1,12 @@
 use crate::binance::Binance;
+use anyhow::Result;
 use binance_async as binance;
-use failure::Fallible;
 use std::env::var;
 
 #[tokio::main]
-async fn main() -> Fallible<()> {
+async fn main() -> Result<()> {
+    dotenv::dotenv()?;
+    env_logger::init();
     tracing::subscriber::set_global_default(tracing_subscriber::FmtSubscriber::new()).unwrap();
 
     let api_key = var("BINANCE_KEY")?;
@@ -12,57 +14,63 @@ async fn main() -> Fallible<()> {
 
     let bn = Binance::with_credential(&api_key, &secret_key);
 
+    // TODO broken due to a decoding issue.
     // General
-    match bn.ping().await {
-        Ok(answer) => println!("{:?}", answer),
-        Err(e) => println!("Error: {}", e),
-    }
+    // match bn.ping().await {
+    //     Ok(answer) => println!("{:?}", answer),
+    //     Err(e) => println!("Error: {}", e),
+    // }
 
     match bn.get_server_time().await {
         Ok(answer) => println!("Server Time: {}", answer.server_time),
         Err(e) => println!("Error: {}", e),
     }
 
+    match bn.get_exchange_info().await {
+        Ok(answer) => println!("ExchangeInfo: {:#?}", answer),
+        Err(e) => println!("Error: {}", e),
+    }
+
     // Account
     match bn.get_account().await {
-        Ok(answer) => println!("{:?}", answer.balances),
+        Ok(answer) => println!("{:#?}", answer),
         Err(e) => println!("Error: {}", e),
     }
 
     match bn.get_open_orders("BTCUSDT").await {
-        Ok(answer) => println!("{:?}", answer),
+        Ok(answer) => println!("{:#?}", answer),
         Err(e) => println!("Error: {}", e),
     }
 
-    match bn.limit_buy("BTCUSDT", 1., 0.1).await {
-        Ok(answer) => println!("{:?}", answer),
-        Err(e) => println!("Error: {}", e),
-    }
+    // match bn.limit_buy("BTCUSDT", 1., 0.1).await {
+    //     Ok(answer) => println!("{:?}", answer),
+    //     Err(e) => println!("Error: {}", e),
+    // }
 
-    match bn.market_buy("BTCUSDT", 5.).await {
-        Ok(answer) => println!("{:?}", answer),
-        Err(e) => println!("Error: {}", e),
-    }
+    // match bn.market_buy("BTCUSDT", 5.).await {
+    //     Ok(answer) => println!("{:?}", answer),
+    //     Err(e) => println!("Error: {}", e),
+    // }
 
-    match bn.limit_sell("BTCUSDT", 10., 0.035_000).await {
-        Ok(answer) => println!("{:?}", answer),
-        Err(e) => println!("Error: {}", e),
-    }
+    // match bn.limit_sell("BTCUSDT", 10., 0.035_000).await {
+    //     Ok(answer) => println!("{:?}", answer),
+    //     Err(e) => println!("Error: {}", e),
+    // }
 
-    match bn.market_sell("BTCUSDT", 5.).await {
-        Ok(answer) => println!("{:?}", answer),
-        Err(e) => println!("Error: {}", e),
-    }
+    // match bn.market_sell("BTCUSDT", 5.).await {
+    //     Ok(answer) => println!("{:?}", answer),
+    //     Err(e) => println!("Error: {}", e),
+    // }
 
-    match bn.order_status("BTCUSDT", 1_957_528).await {
-        Ok(answer) => println!("{:?}", answer),
-        Err(e) => println!("Error: {}", e),
-    }
+    // match bn.order_status("BTCUSDT", 1_957_528).await {
+    //     Ok(answer) => println!("{:?}", answer),
+    //     Err(e) => println!("Error: {}", e),
+    // }
 
-    match bn.cancel_order("BTCUSDT", 1_957_528).await {
-        Ok(answer) => println!("{:?}", answer),
-        Err(e) => println!("Error: {}", e),
-    }
+    // match bn.cancel_order("BTCUSDT", 1_957_528).await {
+    //     Ok(answer) => println!("{:?}", answer),
+    //     Err(e) => println!("Error: {}", e),
+    // }
 
     match bn.get_balance("BTC").await {
         Ok(answer) => println!("{:?}", answer),
@@ -70,7 +78,7 @@ async fn main() -> Fallible<()> {
     }
 
     match bn.trade_history("BTCUSDT").await {
-        Ok(answer) => println!("{:?}", answer),
+        Ok(answer) => println!("{:#?}", answer),
         Err(e) => println!("Error: {}", e),
     }
 
@@ -78,13 +86,13 @@ async fn main() -> Fallible<()> {
 
     // Order book
     match bn.get_depth("BTCUSDT", None).await {
-        Ok(answer) => println!("{:?}", answer),
+        Ok(answer) => println!("{:#?}", answer),
         Err(e) => println!("Error: {}", e),
     }
 
     // Latest price for ALL symbols
     match bn.get_all_prices().await {
-        Ok(answer) => println!("{:?}", answer),
+        Ok(answer) => println!("{:#?}", answer),
         Err(e) => println!("Error: {}", e),
     }
 
@@ -96,7 +104,7 @@ async fn main() -> Fallible<()> {
 
     // Best price/qty on the order book for ALL symbols
     match bn.get_all_book_tickers().await {
-        Ok(answer) => println!("{:?}", answer),
+        Ok(answer) => println!("{:#?}", answer),
         Err(e) => println!("Error: {}", e),
     }
 
@@ -120,7 +128,7 @@ async fn main() -> Fallible<()> {
 
     // last 10 5min klines (candlesticks) for a symbol:
     match bn.get_klines("BTCUSDT", "5m", 10, None, None).await {
-        Ok(answer) => println!("{:?}", answer),
+        Ok(answer) => println!("{:#?}", answer),
         Err(e) => println!("Error: {}", e),
     }
 

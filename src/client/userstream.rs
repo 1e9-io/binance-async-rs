@@ -1,33 +1,37 @@
+use crate::transport::Version;
 use crate::{
     client::Binance,
     model::{Success, UserDataStream},
 };
-use failure::Fallible;
-
-const USER_DATA_STREAM: &str = "/api/v1/userDataStream";
+use anyhow::Result;
 
 impl Binance {
     // User Stream
-    pub async fn user_stream_start(&self) -> Fallible<UserDataStream> {
-        Ok(self.transport.post::<_, ()>(USER_DATA_STREAM, None).await?)
+    pub async fn user_stream_start(&self) -> Result<UserDataStream> {
+        Ok(self
+            .transport
+            .post::<_, ()>(Version::V3, "/userDataStream", None)
+            .await?)
     }
 
     // Current open orders on a symbol
-    pub async fn user_stream_keep_alive(&self, listen_key: &str) -> Fallible<Success> {
+    pub async fn user_stream_keep_alive(&self, listen_key: &str) -> Result<Success> {
         Ok(self
             .transport
             .put(
-                USER_DATA_STREAM,
+                Version::V3,
+                "/userDataStream",
                 Some(vec![("listen_key", listen_key.to_string())]),
             )
             .await?)
     }
 
-    pub async fn user_stream_close(&self, listen_key: &str) -> Fallible<Success> {
+    pub async fn user_stream_close(&self, listen_key: &str) -> Result<Success> {
         let success = self
             .transport
             .delete(
-                USER_DATA_STREAM,
+                Version::V3,
+                "/userDataStream",
                 Some(vec![("listen_key", listen_key.to_string())]),
             )
             .await?;
