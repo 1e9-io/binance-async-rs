@@ -33,7 +33,7 @@ pub struct BinanceWebsocket {
 }
 
 impl BinanceWebsocket {
-    pub async fn subscribe(&mut self, subscription: Subscription) -> Result<()> {
+    pub async fn subscribe(&mut self, subscription: &Subscription) -> Result<()> {
         let sub = match subscription {
             Subscription::AggregateTrade(ref symbol) => format!("{}@aggTrade", symbol),
             Subscription::Candlestick(ref symbol, ref interval) => {
@@ -58,7 +58,7 @@ impl BinanceWebsocket {
             .insert(connect_async(endpoint).await?.0.split().1);
 
         self.subscriptions.insert(subscription.clone(), token);
-        self.tokens.insert(token, subscription);
+        self.tokens.insert(token, subscription.clone());
         Ok(())
     }
 
