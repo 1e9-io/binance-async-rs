@@ -23,33 +23,32 @@ name = "binance_async"
 path = "src/lib.rs"
 
 [dependencies]
-tracing = "0.1.25"
-tungstenite = "0.13.0"
-tokio-tungstenite = { version = "0.13.0", features = ["tls"] }
-url = "2.2.1"
+tracing = "0.1.40"
+tungstenite = "0.24.0"
+tokio-tungstenite = { version = "0.24.0", features = ["native-tls"] }
+url = "2.5.2"
 log = "0.4"
-env_logger = "0.8.4"
+env_logger = "0.11.5"
 dotenv = "0.15.0"
-futures = "0.3.13"
-headers = "0.3.4"
-http = "0.2.4"
+futures = "0.3.31"
+headers = "0.4.0"
+http = "1.1.0"
 maplit = "1.0.2"
-once_cell = "1.7.2"
-reqwest = { version = "0.11.2", features = ["json"] }
-reqwest-ext = { git = "https://github.com/utx0/reqwest-ext" }
-snafu = "0.6.10"
-streamunordered = "0.5.2"
-tokio = { version = "1.4.0", features = ["full"] }
-thiserror = "1.0.28"
-anyhow = "1.0.43"
-chrono = { version = "0.4.19", features = ["serde"] }
-serde = { version = "1.0.125", features = ["derive"] }
-serde_json = "1.0.64"
+once_cell = "1.20.2"
+reqwest = { version = "0.12.8", features = ["json"] }
+snafu = "0.8.5"
+streamunordered = { git = "https://github.com/utx0/streamunordered" }
+tokio = { version = "1.40.0", features = ["full"] }
+thiserror = "1.0.64"
+anyhow = "1.0.89"
+chrono = { version = "0.4.38", features = ["serde"] }
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = "1.0.128"
 hex = "0.4.3"
-sha2 = "0.8"
-hmac = "0.7"
+sha2 = "0.10"
+hmac = "0.12"
 
 [dev-dependencies]
-csv = "1.1.6"
-tokio = { version = "1.4.0", features = ["full"] }
-tracing-subscriber = "0.2.17"
+# csv = "1.3.0"
+# tokio = { version = "1.40.0", features = ["full"] }
+tracing-subscriber = "0.3.18"

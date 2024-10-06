@@ -15,7 +15,6 @@ use streamunordered::{StreamUnordered, StreamYield};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
 use tracing::*;
-use url::Url;
 
 const WS_URL: &str = "wss://stream.binance.com:9443/ws";
 
@@ -51,7 +50,7 @@ impl BinanceWebsocket {
 
         trace!("[Websocket] Subscribing to '{:?}'", subscription);
 
-        let endpoint = Url::parse(&format!("{}/{}", WS_URL, sub)).unwrap();
+        let endpoint = format!("{}/{}", WS_URL, sub);
 
         let token = self
             .streams
@@ -94,12 +93,13 @@ impl Stream for BinanceWebsocket {
 }
 
 fn parse_message(sub: &Subscription, msg: Message) -> Result<BinanceWebsocketMessage> {
-    let msg = match msg {
+    let msg  = match msg {
         Message::Text(msg) => msg,
         Message::Binary(b) => return Ok(BinanceWebsocketMessage::Binary(b)),
         Message::Pong(..) => return Ok(BinanceWebsocketMessage::Pong),
         Message::Ping(..) => return Ok(BinanceWebsocketMessage::Ping),
         Message::Close(..) => return Err(anyhow!("Socket closed")),
+        Message::Frame(msg) => return Err(anyhow!("Unexpected frame: {:?}", msg)),
     };
 
     trace!("Incoming websocket message {}", msg);

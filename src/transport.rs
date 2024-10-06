@@ -7,7 +7,6 @@ use hmac::{Hmac, Mac};
 use http::Method;
 use log::debug;
 use once_cell::sync::OnceCell;
-use reqwest_ext::*;
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::{to_string, to_value, Value};
 use sha2::Sha256;
@@ -232,12 +231,11 @@ impl Transport {
         let mut req = self
             .client
             .request(method, url.as_str())
-            .typed_header(headers::UserAgent::from_static("binance-async-rs"))
-            .typed_header(headers::ContentType::form_url_encoded());
+            .header("Content-Type", "application/x-www-form-urlencoded");
 
         if let Ok((key, _)) = self.check_key() {
             // This is for user stream: user stream requests need api key in the header but no signature. WEIRD
-            req = req.typed_header(BinanceApiKey(key.to_string()));
+            req = req.header("X-MBX-APIKEY", key);
         }
 
         let req = req.body(body);
@@ -281,9 +279,8 @@ impl Transport {
         let req = self
             .client
             .request(method, url.as_str())
-            .typed_header(headers::UserAgent::from_static("binance-async-rs"))
-            .typed_header(headers::ContentType::form_url_encoded())
-            .typed_header(BinanceApiKey(key.to_string()))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .header("X-MBX-APIKEY", key)
             .body(body);
 
         Ok(req
@@ -304,11 +301,11 @@ impl Transport {
     pub(self) fn signature(&self, url: &Url, body: &str) -> Result<(&str, String)> {
         let (key, secret) = self.check_key()?;
         // Signature: hex(HMAC_SHA256(queries + data))
-        let mut mac = Hmac::<Sha256>::new_varkey(secret.as_bytes()).unwrap();
+        let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
         let sign_message = format!("{}{}", url.query().unwrap_or(""), body);
         trace!("Sign message: {}", sign_message);
-        mac.input(sign_message.as_bytes());
-        let signature = hexify(mac.result().code());
+        mac.update(sign_message.as_bytes());
+        let signature = hexify(mac.finalize().into_bytes());
         Ok((key, signature))
     }
 }
