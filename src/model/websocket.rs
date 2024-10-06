@@ -52,10 +52,6 @@ pub struct TradeMessage {
     pub price: f64,
     #[serde(rename = "q", with = "string_or_float")]
     pub qty: f64,
-    #[serde(rename = "b")]
-    pub buyer_order_id: i64,
-    #[serde(rename = "a")]
-    pub seller_order_id: i64,
     #[serde(rename = "T")]
     pub trade_order_time: i64,
     #[serde(rename = "m")]
