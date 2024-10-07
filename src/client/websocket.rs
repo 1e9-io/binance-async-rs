@@ -93,7 +93,7 @@ impl Stream for BinanceWebsocket {
 }
 
 fn parse_message(sub: &Subscription, msg: Message) -> Result<BinanceWebsocketMessage> {
-    let msg  = match msg {
+    let msg = match msg {
         Message::Text(msg) => msg,
         Message::Binary(b) => return Ok(BinanceWebsocketMessage::Binary(b)),
         Message::Pong(..) => return Ok(BinanceWebsocketMessage::Pong),
