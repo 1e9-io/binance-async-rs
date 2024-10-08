@@ -5,8 +5,6 @@ use std::env::var;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing::subscriber::set_global_default(tracing_subscriber::FmtSubscriber::new()).unwrap();
-
     let api_key = var("BINANCE_KEY")?;
     let secret_key = var("BINANCE_SECRET")?;
 

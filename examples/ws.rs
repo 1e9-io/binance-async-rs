@@ -6,8 +6,6 @@ use futures::TryStreamExt;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing::subscriber::set_global_default(tracing_subscriber::FmtSubscriber::new()).unwrap();
-
     println!("Data Stream Started ...");
 
     let mut ws = BinanceWebsocket::default();

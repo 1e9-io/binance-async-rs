@@ -12,7 +12,6 @@ use serde_json::{to_string, to_value, Value};
 use sha2::Sha256;
 use std::fmt;
 use std::str::FromStr;
-use tracing::*;
 use url::Url;
 
 const BASE: &str = "https://www.binance.com/api";
@@ -303,7 +302,6 @@ impl Transport {
         // Signature: hex(HMAC_SHA256(queries + data))
         let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
         let sign_message = format!("{}{}", url.query().unwrap_or(""), body);
-        trace!("Sign message: {}", sign_message);
         mac.update(sign_message.as_bytes());
         let signature = hexify(mac.finalize().into_bytes());
         Ok((key, signature))

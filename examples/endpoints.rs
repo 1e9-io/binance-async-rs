@@ -7,7 +7,6 @@ use std::env::var;
 async fn main() -> Result<()> {
     dotenv::dotenv()?;
     env_logger::init();
-    tracing::subscriber::set_global_default(tracing_subscriber::FmtSubscriber::new()).unwrap();
 
     let api_key = var("BINANCE_KEY")?;
     let secret_key = var("BINANCE_SECRET")?;
